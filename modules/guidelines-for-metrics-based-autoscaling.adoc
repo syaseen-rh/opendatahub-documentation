@@ -7,16 +7,15 @@
 
 You can use metrics-based autoscaling to scale your AI workloads based on latency or throughput-focused Service Level Objectives (SLOs) as opposed to traditional request concurrency. Metrics-based autoscaling is based on Kubernetes Event-driven Autoscaling (KEDA).
 
-Traditional scaling methods, which depend on factors like request concurrency, request rate, or CPU utilization, are not effective for scaling LLM inference servers that operate on GPUs. In contrast, vLLM capacity is determined by the size of the GPU and the total number of tokens processed simultaneously. Custom metrics facilitate autoscaling decisions that align directly with the desired service level objective (SLO).
+Traditional scaling methods, which depend on factors like request concurrency, request rate, or CPU utilization, are not effective for scaling LLM inference servers that operate on GPUs. In contrast, vLLM capacity is determined by the size of the GPU and the total number of tokens processed simultaneously. You can use custom metrics to help with autoscaling decisions to meet your SLOs.
 
-The following sections details best practices for autoscaling AI inference workloads, including selecting metrics, defining sliding windows, configuring HPA scale-down settings, and taking model size into account for optimal scaling performance.
+The following guidelines can help you autoscale AI inference workloads, including selecting metrics, defining sliding windows, configuring HPA scale-down settings, and taking model size into account for optimal scaling performance.
 
 == Choosing metrics for latency and throughput-optimized scaling
 
-For latency-sensitive applications, the choice of scaling metrics depends heavily on the characteristics of the requests:
+For latency-sensitive applications, choose scaling metrics depending on the characteristics of the requests:
 
-* For use cases with a high degree of variance in sequence length, it is advisable to use SLOs defined by `Time to First Token` (TTFT) and `Inter-Token Latency` (ITL). These metrics provide more stable scaling signals that are less affected by natural fluctuations in input and output sequence lengths.
-
+* When sequence lengths vary, use service level objectives (SLOs) for Time to First Token (TTFT) and Inter-Token Latency (ITL). These metrics provide more scaling signals because they are less affected by changes in sequence length.
 * For use cases where requests are of similar sequence lengths, it is recommended to use the `end-to-end request latency` as a scaling trigger, as the variance in input and output sequence length is minimal.
 //End-to-end (e2e) request latency depends on sequence length, posing challenges for use cases with high variance in input/output token counts. A 10 token completion and a 2000 token completion will have vastly different latencies even under identical system conditions.
 
@@ -81,33 +80,31 @@ spec:
 ----
 The optimal configuration depends on finding the right balance between resource efficiency and application responsiveness for your particular workload requirements.
 
-== Considering model size for optimal scaling
+== Selecting a model size for optimal scaling
 
-When implementing metrics-based autoscaling for AI inference workloads, you must consider the impact of model size on scaling behavior and resource allocation strategies. The specifications below outline default configurations and typical performance characteristics to guide your approach.
+Model size affects autoscaling behavior and resource use. The following table describes the typical characteristics for different model sizes and describes a scaling strategy to select when implementing metrics-based autoscaling for AI inference workloads.
 
-* **Small models (< 3B parameters):**
-    ** Memory footprint: < 6 GiB.
-    ** Suitable for aggressive scaling policies with lower resource buffers.
-    ** Cold start times: Up to 10 minutes to download and 30 seconds to load.
-* **Medium models (3B-10B parameters):**
-    ** Memory footprint: 6-20 GiB.
-    ** Require more conservative scaling due to the size of the model.
-    ** Cold start times: Up to 30 minutes to download and 1 minute to load.
-* **Large models (> 10B parameters):**
-    **  Memory footprint: > 20 GiB.
-    **  May require model sharding or quantization for efficient scaling.
-    **  Cold start times: Up to hours to download and several minutes to load.
+[cols="1,1,1,1", options="header"]  
+|=== 
+| Model size | Memory footprint | Scaling strategy | Cold start time
+| Small (Less than 3B)
+| Less than 6 GiB
+| Use aggressive scaling with lower resource buffers.
+| Up to 10 minutes to download and 30 seconds to load.
+| Medium (3B-10B)
+| 6-20 GiB	
+| Use a more conservative scaling strategy.	
+| Up to 30 minutes to download and 1 minute to load.
+| Large (Greater than 10B)
+| Greater than 20 GiB
+| May require model sharding or quantization.
+| Up to several hours to download and minutes to load.
+|===
 
-For models with fewer than 3 billion parameters, you can use various techniques to significantly reduce cold start latency:
+For models with fewer than 3 billion parameters, you can reduce cold start latency with the following strategies:
 
-* **Container image optimization:**
-    ** Prebuild images with models embedded rather than downloading models at runtime.
-    ** Use multi-stage builds to minimize the final image size.
-    ** Leverage image layer caching for faster container pulls.
-* **Model caching strategies:**
-    ** Define Persistent Volume Claims (PVCs) for shared model storage across replicas.
-    ** Configure your inference service to use the PVC.
-
+* Optimize container images by embedding models directly into the image instead of downloading them at runtime. You can also use multi-stage builds to reduce the final image size and use image layer caching for faster container pulls.
+* Cache models on a Persistent Volume Claim (PVC) to share storage across replicas. Configure your inference service to use the PVC to access the cached model.
 
 [role="_additional-resources"]
 .Additional resources
