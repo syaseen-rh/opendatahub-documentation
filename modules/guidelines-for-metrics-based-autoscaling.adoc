@@ -80,7 +80,7 @@ spec:
 ----
 The optimal configuration depends on finding the right balance between resource efficiency and application responsiveness for your particular workload requirements.
 
-== Selecting a model size for optimal scaling
+== Considering model size for optimal scaling
 
 Model size affects autoscaling behavior and resource use. The following table describes the typical characteristics for different model sizes and describes a scaling strategy to select when implementing metrics-based autoscaling for AI inference workloads.
 
